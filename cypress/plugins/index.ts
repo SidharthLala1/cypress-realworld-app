@@ -12,6 +12,7 @@ export default (on, config) => {
   config.env.paginationPageSize = process.env.PAGINATION_PAGE_SIZE;
   config.env.auth0_username = process.env.AUTH0_USERNAME;
   config.env.auth0_password = process.env.AUTH0_PASSWORD;
+  config.env.auth0_domain = process.env.REACT_APP_AUTH0_DOMAIN;
 
   const testDataApiEndpoint = `${config.env.apiUrl}/testData`;
 

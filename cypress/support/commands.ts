@@ -315,10 +315,35 @@ Cypress.Commands.add("auth0EnterUserCredentials", (username, password) => {
 Cypress.Commands.add("loginByAuth0", (username, password) => {
   // See https://github.com/cypress-io/cypress/issues/408 needed to clear all cookies from all domains
   // @ts-ignore
-  cy.clearCookies({ domain: null });
+  // cy.clearCookies({ domain: null });
+
+  // Preserve Auth0 Cookies
+  // https://docs.cypress.io/faq/questions/using-cypress-faq.html#How-do-I-preserve-cookies-localStorage-in-between-my-tests
+  Cypress.Cookies.defaults({
+    whitelist: ["auth0", "auth0.is.authenticated", "did"],
+  });
 
   cy.visit("/");
 
-  cy.auth0AllowApp();
-  cy.auth0EnterUserCredentials(username, password);
+  // @ts-ignore
+  cy.getCookies({ domain: null }).then((cookies) => {
+    if (
+      cookies.find((cookie) => cookie.name === "auth0") &&
+      cookies.find((cookie) => cookie.name === "auth0.is.authenticated") &&
+      cookies.find((cookie) => cookie.name === "did")
+    ) {
+      Cypress.log({ name: "auth0 cookies", message: "User is logged in" });
+    } else {
+      cy.contains("auth0-cypress-demo").should("be.visible");
+
+      cy.location("pathname").then((pathname) => {
+        console.log("pathname", pathname);
+        if (pathname.includes("login")) {
+          console.log("perform login", pathname);
+          cy.auth0AllowApp();
+          cy.auth0EnterUserCredentials(username, password);
+        }
+      });
+    }
+  });
 });
