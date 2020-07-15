@@ -4,6 +4,21 @@
 import { pick } from "lodash/fp";
 import { format as formatDate } from "date-fns";
 
+let LOCAL_STORAGE_MEMORY: any = {};
+let LS_INCLUDE_KEYS: any = ["auth0AccessToken"];
+
+Cypress.Commands.add("saveLocalStorageAuthCache", () => {
+  LS_INCLUDE_KEYS.forEach((key: string) => {
+    LOCAL_STORAGE_MEMORY[key] = localStorage[key];
+  });
+});
+
+Cypress.Commands.add("restoreLocalStorageAuthCache", () => {
+  LS_INCLUDE_KEYS.forEach((key: string) => {
+    localStorage.setItem(key, LOCAL_STORAGE_MEMORY[key]);
+  });
+});
+
 Cypress.Commands.add("getBySel", (selector, ...args) => {
   return cy.get(`[data-test=${selector}]`, ...args);
 });
@@ -319,8 +334,14 @@ Cypress.Commands.add("loginByAuth0", (username, password) => {
 
   // Preserve Auth0 Cookies
   // https://docs.cypress.io/faq/questions/using-cypress-faq.html#How-do-I-preserve-cookies-localStorage-in-between-my-tests
+  // whitelist: ["auth0", "auth0.is.authenticated", "did", "did_compat"],
+  // a0.spajs.txs
+
+  cy.restoreLocalStorageAuthCache();
   Cypress.Cookies.defaults({
-    whitelist: ["auth0", "auth0.is.authenticated", "did"],
+    whitelist: new RegExp(
+      /(auth0.*|did.*|a0.*|OptanonConsent.*|_hjid.*|_hp2_id.*|_ga.*|ga_.*|_gid.*|ajs_.*|_gcl.*)/g
+    ),
   });
 
   cy.visit("/");
@@ -334,7 +355,11 @@ Cypress.Commands.add("loginByAuth0", (username, password) => {
     ) {
       Cypress.log({ name: "auth0 cookies", message: "User is logged in" });
     } else {
-      cy.contains("auth0-cypress-demo").should("be.visible");
+      cy.get("body").then(($body) => {
+        if ($body.find(".auth0-lock-name").length > 0) {
+          cy.contains("auth0-cypress-demo").should("be.visible");
+        }
+      });
 
       cy.location("pathname").then((pathname) => {
         console.log("pathname", pathname);
@@ -342,6 +367,7 @@ Cypress.Commands.add("loginByAuth0", (username, password) => {
           console.log("perform login", pathname);
           cy.auth0AllowApp();
           cy.auth0EnterUserCredentials(username, password);
+          cy.saveLocalStorageAuthCache();
         }
       });
     }

@@ -41,7 +41,7 @@ describe("Auth0", function () {
     cy.location("pathname").should("eq", "/");
   });
 
-  it("renders the user settings form", function () {
+  it.skip("renders the user settings form", function () {
     cy.getBySel("sidenav-user-settings").click();
 
     cy.getBySel("user-settings-form").should("be.visible");
